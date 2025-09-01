@@ -2,7 +2,8 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- MODIFICATION: Disable zoom on all devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tops Store Data</title>
     <link rel="icon" type="image/png" href="https://lh5.googleusercontent.com/d/1-W3jqJmdMVOm3VcgWSbVSlRbq3b4h5em">
     <!-- โหลด Tailwind CSS ผ่าน CDN -->
@@ -51,24 +52,28 @@
 <body class="bg-gradient-to-r from-[#ff3d1a] to-[#ff3d1a] text-gray-800 h-screen overflow-hidden p-2 sm:p-4 md:p-6">
 
     <div class="w-full h-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col relative">
-        <div class="p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+        <!-- MODIFICATION: Reduced bottom padding (pb-2) -->
+        <div class="p-4 pb-2 sm:p-6 sm:pb-4 border-b border-gray-200 flex-shrink-0">
             <h1 class="text-2xl sm:text-4xl font-bold text-red-600">Tops Store Data</h1>
             <p class="mt-1 text-sm sm:text-base text-gray-600">ข้อมูลสาขา Tops</p>
         </div>
         
-        <!-- ADJUSTMENT: Container uses items-stretch for equal height buttons -->
-        <div class="px-4 sm:px-6 pt-4 flex-shrink-0 flex flex-col sm:flex-row gap-2 items-stretch">
+        <!-- MODIFICATION: Container is now always flex-row, reduced padding, and items are centered vertically -->
+        <div class="px-4 sm:px-6 pt-2 flex-shrink-0 flex flex-row gap-2 items-center">
+             <!-- MODIFICATION: Input is smaller (p-2, text-sm) and grows to fill space -->
             <input type="text" id="globalSearchInput"
-                   class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                   class="flex-grow w-full p-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                    placeholder="ค้นหา...">
-            <div class="flex gap-2 w-full sm:w-auto">
-                <button id="clearFiltersBtn" class="w-1/2 sm:w-auto p-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-semibold">Clear All</button>
-                <button id="exportExcelBtn" class="w-1/2 sm:w-auto p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-semibold">Excel File</button>
+            <!-- MODIFICATION: Button container does not grow or shrink -->
+            <div class="flex gap-2 flex-shrink-0">
+                <!-- MODIFICATION: Buttons are smaller (p-2, text-xs) -->
+                <button id="clearFiltersBtn" class="w-auto p-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-xs font-semibold">Clear All</button>
+                <button id="exportExcelBtn" class="w-auto p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-xs font-semibold">Excel</button>
             </div>
         </div>
 
 
-        <div id="summary-container" class="px-4 sm:px-6 py-4 flex gap-2 sm:gap-3 overflow-x-auto flex-shrink-0 no-scrollbar">
+        <div id="summary-container" class="px-4 sm:px-6 py-3 flex gap-2 sm:gap-3 overflow-x-auto flex-shrink-0 no-scrollbar">
             <!-- Summary boxes will be injected here -->
         </div>
 
@@ -88,7 +93,7 @@
         </div>
         
         <footer class="absolute bottom-2 right-4 text-xs text-gray-400">
-            V.1.4
+            V.1.5
         </footer>
     </div>
 
@@ -119,14 +124,14 @@
         function renderSummary(dataToSummarize) {
             summaryContainer.innerHTML = '';
             const totalCount = dataToSummarize.length;
-            // BUG FIX: Correct key for format
             const formatKey = "Format";
 
             const totalBox = document.createElement('div');
-            totalBox.className = 'bg-gray-800 text-white p-2 rounded-lg text-center shadow-md flex-shrink-0 w-24 h-16 flex flex-col justify-center';
+            // MODIFICATION: Summary boxes are smaller (w-20 h-14), font size adjusted
+            totalBox.className = 'bg-gray-800 text-white p-2 rounded-lg text-center shadow-md flex-shrink-0 w-20 h-14 flex flex-col justify-center';
             totalBox.innerHTML = `
-                <div class="text-xl font-bold">${totalCount}</div>
-                <div class="text-[10px] font-semibold uppercase tracking-wider">Total Stores</div>
+                <div class="text-lg font-bold">${totalCount}</div>
+                <div class="text-[9px] font-semibold uppercase tracking-wider">Total Stores</div>
             `;
             summaryContainer.appendChild(totalBox);
 
@@ -141,10 +146,11 @@
             Object.entries(summary).sort().forEach(([format, count], index) => {
                 const color = summaryColors[index % summaryColors.length];
                 const box = document.createElement('div');
-                box.className = `${color.bg} ${color.text} p-2 rounded-lg text-center shadow-md flex-shrink-0 w-24 h-16 flex flex-col justify-center`;
+                // MODIFICATION: Summary boxes are smaller (w-20 h-14), font size adjusted
+                box.className = `${color.bg} ${color.text} p-2 rounded-lg text-center shadow-md flex-shrink-0 w-20 h-14 flex flex-col justify-center`;
                 box.innerHTML = `
-                    <div class="text-xl font-bold">${count}</div>
-                    <div class="text-[10px] font-semibold uppercase tracking-wider">${format}</div>
+                    <div class="text-lg font-bold">${count}</div>
+                    <div class="text-[9px] font-semibold uppercase tracking-wider">${format}</div>
                 `;
                 summaryContainer.appendChild(box);
             });
@@ -171,22 +177,16 @@
                     filterTh.classList.add('sticky-col', 'bg-gray-200', 'first-col');
                 }
                 
-                // ADJUSTMENT: Add container and SVG icon for filter
                 const filterContainer = document.createElement('div');
                 filterContainer.className = 'relative';
-
-                const filterIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                filterIcon.setAttribute('class', 'absolute top-1/2 left-2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none');
-                filterIcon.setAttribute('fill', 'none');
-                filterIcon.setAttribute('viewBox', '0 0 24 24');
-                filterIcon.setAttribute('stroke', 'currentColor');
-                filterIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L16 11.414V16a1 1 0 01-.293.707l-2 2A1 1 0 0113 18v-6.586l-5.707-5.707A1 1 0 017 5V4z" />`;
+                
+                // MODIFICATION: Filter icon SVG and related code removed
 
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.placeholder = `...`;
-                // Add padding for icon
-                input.className = 'filter-input pl-8'; 
+                // MODIFICATION: Removed padding for icon
+                input.className = 'filter-input'; 
                 input.dataset.header = headerText;
 
                 const datalistId = `datalist-${headerText.replace(/[\s/]/g, '-')}`;
@@ -212,7 +212,6 @@
                     applyFiltersAndRender();
                 });
 
-                filterContainer.appendChild(filterIcon);
                 filterContainer.appendChild(input);
                 filterTh.appendChild(filterContainer);
                 filterTh.appendChild(datalist);
@@ -293,6 +292,7 @@
 
         exportExcelBtn.addEventListener('click', () => {
             if (lastFilteredData.length === 0) {
+                // Using a custom modal/alert in the future would be better than alert()
                 alert("ไม่มีข้อมูลให้ส่งออก");
                 return;
             }
