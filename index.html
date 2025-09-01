@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branch Data Viewer</title>
+    <!-- โหลด Tailwind CSS ผ่าน CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* ใช้ฟอนต์ Kanit สำหรับภาษาไทย และ Inter สำหรับภาษาอังกฤษ */
+        body {
+            font-family: 'Kanit', 'Inter', sans-serif;
+        }
+        /* Custom styles สำหรับตรึงแถวและคอลัมน์ */
+        .sticky-header {
+            position: -webkit-sticky; /* Safari */
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        .sticky-col {
+            position: -webkit-sticky; /* Safari */
+            position: sticky;
+            left: 0;
+            z-index: 10;
+        }
+        /* ทำให้หัวมุมซ้ายบนสุดมี z-index สูงที่สุด */
+        thead th.sticky-col {
+            z-index: 30;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="p-6 border-b border-gray-200">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">ตารางข้อมูลสาขา</h1>
+                <p class="mt-1 text-gray-600">แสดงข้อมูลล่าสุดจาก API และสามารถค้นหาได้</p>
+            </div>
+            
+            <div class="p-6">
+                <!-- ช่องสำหรับค้นหา -->
+                <input type="text" id="searchInput"
+                       class="w-full p-3 mb-6 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                       placeholder="ค้นหาข้อมูลในตาราง...">
+            </div>
+
+            <!-- ส่วนของตารางข้อมูล -->
+            <div id="table-container" class="overflow-auto" style="max-height: 75vh;">
+                <div id="loader" class="text-center p-10">
+                    <p class="text-lg text-gray-500">กำลังโหลดข้อมูลจาก API...</p>
+                </div>
+                <table id="dataTable" class="min-w-full w-full text-sm text-left hidden">
+                    <thead class="bg-gray-200 text-gray-700 uppercase font-semibold text-xs sticky-header">
+                        <!-- Header row will be populated by JavaScript -->
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <!-- Data rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+                 <div id="no-results" class="text-center p-10 hidden">
+                    <p class="text-lg text-gray-500">ไม่พบข้อมูลที่ตรงกับการค้นหา</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwx251cdb6u18aUEc_7BM0ASWI9HCxMoxIBp4MssEoDf0-TiBW--HAaM6jToJrXIGxlrQ/exec?sheet=Sheet1';
+        let fullData = { headers: [], data: [] }; // เก็บข้อมูลทั้งหมด
+
+        // --- ฟังก์ชันสำหรับสร้างและแสดงตาราง ---
+        function renderTable(dataToRender) {
+            const table = document.getElementById('dataTable');
+            const thead = table.querySelector('thead');
+            const tbody = table.querySelector('tbody');
+            const noResults = document.getElementById('no-results');
+            const { headers, data } = dataToRender;
+
+            // ล้างข้อมูลเก่า
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                noResults.classList.remove('hidden');
+                table.classList.add('hidden');
+                return;
+            }
+
+            table.classList.remove('hidden');
+            noResults.classList.add('hidden');
+
+            // 1. สร้าง Header
+            const headerRow = document.createElement('tr');
+            headers.forEach((headerText, index) => {
+                const th = document.createElement('th');
+                th.scope = 'col';
+                th.textContent = headerText;
+                th.className = 'py-3 px-4 whitespace-nowrap sticky-header bg-gray-200';
+                if (index === 0) {
+                    th.classList.add('sticky-col');
+                }
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+
+            // 2. สร้าง Rows ข้อมูล
+            data.forEach(rowDataObject => {
+                const tr = document.createElement('tr');
+                tr.className = 'bg-white hover:bg-gray-50 transition';
+                
+                headers.forEach((headerKey, index) => {
+                    // ใช้ <th> สำหรับคอลัมน์แรกเพื่อความหมาย และตรึงคอลัมน์
+                    const cell = (index === 0) ? document.createElement('th') : document.createElement('td');
+                    const cellData = rowDataObject[headerKey] || ''; // ดึงข้อมูลด้วย key จาก header
+
+                    // จัดการข้อมูลวันที่
+                    if (cellData.toString().includes('T00:00:00.000Z')) {
+                         cell.textContent = new Date(cellData).toLocaleDateString('th-TH');
+                    } else {
+                         cell.textContent = cellData;
+                    }
+                    
+                    if (index === 0) {
+                        cell.scope = 'row';
+                        cell.className = 'py-3 px-4 font-medium text-gray-900 whitespace-nowrap sticky-col bg-white group-hover:bg-gray-50';
+                    } else {
+                        cell.className = 'py-3 px-4 whitespace-nowrap';
+                    }
+                    tr.appendChild(cell);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- Event Listener สำหรับช่องค้นหา ---
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            
+            if (!searchTerm) {
+                renderTable(fullData); // ถ้าช่องค้นหาว่าง ให้แสดงข้อมูลทั้งหมด
+                return;
+            }
+            
+            const filteredData = fullData.data.filter(row => {
+                // ค้นหาจากค่าทั้งหมดใน object ของแถวนั้นๆ
+                return Object.values(row).some(cellValue => 
+                    cellValue.toString().toLowerCase().includes(searchTerm)
+                );
+            });
+
+            renderTable({ headers: fullData.headers, data: filteredData });
+        });
+
+        // --- ดึงข้อมูลจาก API เมื่อหน้าเว็บโหลด ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                document.getElementById('loader').classList.add('hidden');
+                
+                if (data && data.headers && data.data) {
+                    fullData = data;
+                    renderTable(fullData);
+                } else {
+                    throw new Error("Invalid data structure from API");
+                }
+
+            } catch (error) {
+                document.getElementById('loader').classList.add('hidden');
+                const noResults = document.getElementById('no-results');
+                noResults.classList.remove('hidden');
+                noResults.innerText = `เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}`;
+                console.error('Fetch error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
