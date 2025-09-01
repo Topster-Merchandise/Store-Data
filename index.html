@@ -93,7 +93,7 @@
         </div>
         
         <footer class="absolute bottom-2 right-4 text-xs text-gray-400">
-            V.1.5
+            V.1.6
         </footer>
     </div>
 
@@ -290,17 +290,48 @@
             applyFiltersAndRender();
         });
 
+        // ### MODIFICATION START: Mobile-friendly Excel Export ###
         exportExcelBtn.addEventListener('click', () => {
             if (lastFilteredData.length === 0) {
                 // Using a custom modal/alert in the future would be better than alert()
                 alert("ไม่มีข้อมูลให้ส่งออก");
                 return;
             }
-            const worksheet = XLSX.utils.json_to_sheet(lastFilteredData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Tops_Data");
-            XLSX.writeFile(workbook, "Tops_Store_Data.xlsx");
+            
+            try {
+                // 1. Create Worksheet and Workbook as before
+                const worksheet = XLSX.utils.json_to_sheet(lastFilteredData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Tops_Data");
+
+                // 2. Convert the Workbook to an array buffer
+                const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+                // 3. Create a Blob from the array buffer
+                const data = new Blob([excelBuffer], {
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
+                });
+
+                // 4. Create a temporary URL for the Blob and create a download link
+                const downloadUrl = window.URL.createObjectURL(data);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.setAttribute('download', 'Tops_Store_Data.xlsx'); // Set filename
+
+                // 5. Append the link, click it, and then remove it
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // 6. Revoke the object URL to free up memory
+                window.URL.revokeObjectURL(downloadUrl);
+
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการสร้างไฟล์ Excel:", error);
+                alert("เกิดข้อผิดพลาดในการสร้างไฟล์ Excel");
+            }
         });
+        // ### MODIFICATION END ###
 
         globalSearchInput.addEventListener('input', applyFiltersAndRender);
 
