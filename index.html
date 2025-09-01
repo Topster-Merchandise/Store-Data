@@ -4,16 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Topster Store Data</title>
-    <link rel="icon" type="image/png" href="https://lh5.googleusercontent.com/d/1-W3jqJmdMVOm3VcgWSbVSlRbq3b4h5em">
     <!-- โหลด Tailwind CSS ผ่าน CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- --- FONT OPTIONS --- -->
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- FONT OPTIONS (เลือกโดยการลบ comment ของ font ที่ต้องการ) --- */
         body { font-family: 'Sarabun', sans-serif; }
 
         /* Custom styles สำหรับตรึงแถวและคอลัมน์ */
@@ -21,9 +18,15 @@
         .sticky-col { position: -webkit-sticky; position: sticky; left: 0; z-index: 10; }
         thead th.sticky-col { z-index: 30; }
 
-        /* --- TABLE BORDER OPTIONS --- */
-        .table-grid td, .table-grid th { border: 1px solid #e5e7eb; }
-        .table-vertical-lines td, .table-vertical-lines th { border-right: 1px solid #e5e7eb; }
+        /* --- MOBILE UI FIX: First column width --- */
+        .first-col {
+            width: 150px;
+            min-width: 150px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
 
         /* Styling for filter inputs in header */
         .filter-input {
@@ -31,38 +34,44 @@
             padding: 4px 8px;
             margin-top: 4px;
             font-weight: normal;
-            border: 1px solid #d1d5db; /* gray-300 */
+            border: 1px solid #d1d5db;
             border-radius: 6px;
             font-size: 12px;
         }
         .filter-input:focus {
             outline: none;
-            border-color: #3b82f6; /* blue-500 */
+            border-color: #3b82f6;
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
         }
+        
+        /* Hide scrollbar but keep functionality */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-gradient-to-r from-[#ff3d1a] to-[#ff3d1a] text-gray-800 h-screen overflow-hidden p-4 sm:p-6 lg:p-8">
+<body class="bg-gradient-to-r from-[#ff3d1a] to-[#ff3d1a] text-gray-800 h-screen overflow-hidden p-2 sm:p-4 md:p-6">
 
-    <div class="w-full h-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col">
-        <div class="p-6 border-b border-gray-200 flex-shrink-0">
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Topster Store Data</h1>
-            <p class="mt-1 text-gray-600">ข้อมูลสาขาของ Tops</p>
+    <div class="w-full h-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col relative">
+        <div class="p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+            <h1 class="text-xl sm:text-3xl font-bold text-gray-900">Topster Store Data</h1>
+            <p class="mt-1 text-sm sm:text-base text-gray-600">ข้อมูลสาขาของ Tops</p>
         </div>
         
-        <div class="p-6 flex-shrink-0">
+        <div class="px-4 sm:px-6 pt-4 flex-shrink-0">
             <input type="text" id="globalSearchInput"
                    class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                    placeholder="ค้นหาทั้งหมดในตาราง...">
         </div>
 
-        <!-- NEW: Summary Boxes Section -->
-        <div id="summary-container" class="px-6 pb-4 flex flex-wrap gap-3 sm:gap-4 overflow-x-auto flex-shrink-0">
-            <!-- Summary boxes will be injected here by JavaScript -->
+        <!-- Summary Boxes Section - Adjusted for mobile -->
+        <div id="summary-container" class="px-4 sm:px-6 py-4 flex gap-3 overflow-x-auto flex-shrink-0 no-scrollbar">
+            <!-- Summary boxes will be injected here -->
         </div>
 
         <div id="table-container" class="overflow-auto flex-grow">
-            <div id="loader" class="text-center p-10"><p class="text-lg text-gray-500">กำลังโหลดข้อมูลจาก API...</p></div>
+            <div id="loader" class="flex justify-center items-center p-10">
+                <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-red-500"></div>
+            </div>
             <table id="dataTable" class="min-w-full w-full text-sm text-left hidden">
                 <thead class="bg-gray-200 text-gray-700 uppercase font-semibold text-xs sticky-header">
                     <!-- Header and filter rows will be populated by JavaScript -->
@@ -73,6 +82,11 @@
             </table>
             <div id="no-results" class="text-center p-10 hidden"><p class="text-lg text-gray-500">ไม่พบข้อมูลที่ตรงกับการค้นหา</p></div>
         </div>
+        
+        <!-- Version Number -->
+        <footer class="absolute bottom-2 right-4 text-xs text-gray-400">
+            V.1.2
+        </footer>
     </div>
 
     <script>
@@ -88,7 +102,6 @@
         const noResults = document.getElementById('no-results');
         const summaryContainer = document.getElementById('summary-container');
 
-        // --- NEW: Function to render summary boxes ---
         const summaryColors = [
             { bg: 'bg-green-100', text: 'text-green-800' },
             { bg: 'bg-yellow-100', text: 'text-yellow-800' },
@@ -100,14 +113,14 @@
         function renderSummary(dataToSummarize) {
             summaryContainer.innerHTML = '';
             const totalCount = dataToSummarize.length;
-            const formatKey = "ฟอร์เมท / Format";
+            const formatKey = "Format";
 
-            // Create a box for the total count
             const totalBox = document.createElement('div');
-            totalBox.className = 'bg-gray-800 text-white p-3 rounded-lg text-center shadow-md flex-shrink-0';
+            // MOBILE UI FIX: Responsive summary box size
+            totalBox.className = 'bg-gray-800 text-white p-2 sm:p-3 rounded-lg text-center shadow-md flex-shrink-0';
             totalBox.innerHTML = `
-                <div class="text-2xl font-bold">${totalCount}</div>
-                <div class="text-xs font-semibold uppercase tracking-wider">Total Stores</div>
+                <div class="text-lg sm:text-2xl font-bold">${totalCount}</div>
+                <div class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider">Total Stores</div>
             `;
             summaryContainer.appendChild(totalBox);
 
@@ -119,14 +132,14 @@
                 return acc;
             }, {});
 
-            // Create boxes for each format
             Object.entries(summary).sort().forEach(([format, count], index) => {
                 const color = summaryColors[index % summaryColors.length];
                 const box = document.createElement('div');
-                box.className = `${color.bg} ${color.text} p-3 rounded-lg text-center shadow-md flex-shrink-0`;
+                // MOBILE UI FIX: Responsive summary box size
+                box.className = `${color.bg} ${color.text} p-2 sm:p-3 rounded-lg text-center shadow-md flex-shrink-0`;
                 box.innerHTML = `
-                    <div class="text-2xl font-bold">${count}</div>
-                    <div class="text-xs font-semibold uppercase tracking-wider">${format}</div>
+                    <div class="text-lg sm:text-2xl font-bold">${count}</div>
+                    <div class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider">${format}</div>
                 `;
                 summaryContainer.appendChild(box);
             });
@@ -143,14 +156,16 @@
                 th.textContent = headerText;
                 th.className = 'py-3 px-4 whitespace-nowrap';
                  if (index === 0) {
-                    th.classList.add('sticky-col', 'bg-gray-200');
+                    // MOBILE UI FIX: Apply width class to first column header
+                    th.classList.add('sticky-col', 'bg-gray-200', 'first-col');
                 }
                 headerRow.appendChild(th);
 
                 const filterTh = document.createElement('th');
                 filterTh.className = 'p-2';
                 if (index === 0) {
-                    filterTh.classList.add('sticky-col', 'bg-gray-200');
+                    // MOBILE UI FIX: Apply width class to first filter cell
+                    filterTh.classList.add('sticky-col', 'bg-gray-200', 'first-col');
                 }
                 
                 const input = document.createElement('input');
@@ -211,7 +226,8 @@
                     
                     if (index === 0) {
                         cell.scope = 'row';
-                        cell.className = 'py-3 px-4 font-medium text-gray-900 whitespace-nowrap sticky-col bg-white';
+                        // MOBILE UI FIX: Apply width class to first data cell
+                        cell.className = 'py-3 px-4 font-medium text-gray-900 sticky-col bg-white first-col';
                     } else {
                         cell.className = 'py-3 px-4 whitespace-nowrap';
                     }
@@ -246,7 +262,7 @@
                 );
             });
             renderTableBody(filteredData);
-            renderSummary(filteredData); // <-- Update summary on filter
+            renderSummary(filteredData);
         }
 
         globalSearchInput.addEventListener('input', applyFiltersAndRender);
@@ -263,7 +279,7 @@
                     fullData = data;
                     renderHeader();
                     renderTableBody(fullData.data);
-                    renderSummary(fullData.data); // <-- Initial summary render
+                    renderSummary(fullData.data);
                 } else {
                     throw new Error("Invalid data structure from API");
                 }
