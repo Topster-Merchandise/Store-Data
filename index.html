@@ -49,7 +49,7 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-gradient-to-r from-[#ff3d1a] to-[#ff3d1a] text-gray-800 h-screen overflow-hidden p-2 sm:p-4 md:p-6">
+<body class="bg-gradient-to-r from-[#ff3d1a] to-[#ff3d1a] text-gray-800 h-screen overflow-hidden p-2 pb-4 sm:p-4 sm:pb-6 md:p-6 md:pb-8">
 
     <div class="w-full h-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col relative">
         <!-- MODIFICATION: Reduced bottom padding (pb-2) -->
@@ -77,7 +77,7 @@
             <!-- Summary boxes will be injected here -->
         </div>
 
-        <!-- MODIFICATION: Added pb-8 for bottom spacing on mobile -->
+        <!-- MODIFICATION: Reverted padding back to pb-8 -->
         <div id="table-container" class="overflow-auto flex-grow pb-8">
             <div id="loader" class="flex justify-center items-center p-10">
                 <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-red-500"></div>
@@ -94,7 +94,7 @@
         </div>
         
         <footer class="absolute bottom-2 right-4 text-xs text-gray-400">
-            V.1.7
+            V.1.9
         </footer>
     </div>
 
@@ -164,16 +164,18 @@
                 const th = document.createElement('th');
                 th.scope = 'col';
                 th.textContent = headerText;
-                th.className = 'py-3 px-4 border-r border-gray-300';
+                // MODIFICATION: Added bg-gray-200 to ensure border visibility
+                th.className = 'py-3 px-4 border-r border-gray-300 bg-gray-200';
                  if (index === 0) {
-                    th.classList.add('sticky-col', 'bg-gray-200', 'first-col');
+                    th.classList.add('sticky-col', 'first-col');
                 }
                 headerRow.appendChild(th);
 
                 const filterTh = document.createElement('th');
-                filterTh.className = 'p-2 align-top border-r border-gray-300';
+                // MODIFICATION: Added bg-gray-200 to ensure border visibility
+                filterTh.className = 'p-2 align-top border-r border-gray-300 bg-gray-200';
                 if (index === 0) {
-                    filterTh.classList.add('sticky-col', 'bg-gray-200', 'first-col');
+                    filterTh.classList.add('sticky-col', 'first-col');
                 }
                 
                 const filterContainer = document.createElement('div');
@@ -240,9 +242,9 @@
                     
                     if (index === 0) {
                         cell.scope = 'row';
-                        cell.className = 'py-3 px-4 font-medium text-gray-900 sticky-col bg-white first-col border-r border-gray-200';
+                        cell.className = 'py-3 px-4 font-medium text-gray-900 sticky-col bg-white first-col border-r border-gray-300';
                     } else {
-                        cell.className = 'py-3 px-4 whitespace-nowrap border-r border-gray-200';
+                        cell.className = 'py-3 px-4 whitespace-nowrap border-r border-gray-300';
                     }
                     tr.appendChild(cell);
                 });
@@ -286,9 +288,8 @@
             applyFiltersAndRender();
         });
 
-        // ### MODIFICATION START: Mobile-friendly Excel Export with Web Share API ###
+        // ### MODIFICATION START: Reworked Excel Export Logic ###
         
-        // Helper function for the download fallback
         function downloadBlob(blob, fileName) {
             const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -315,31 +316,33 @@
                     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8'
                 });
                 const fileName = 'Tops_Store_Data.xlsx';
+                const file = new File([blob], fileName, { type: blob.type });
+                
+                // Data for sharing (file only)
+                const shareData = { files: [file] };
 
-                // Check for Web Share API support
-                if (navigator.share && navigator.canShare) {
-                    const file = new File([blob], fileName, { type: blob.type });
-                    
-                    // Check if the browser can share these files
-                    if (navigator.canShare({ files: [file] })) {
-                        await navigator.share({
-                            files: [file],
-                            title: 'Tops Store Data',
-                            text: 'ข้อมูลสาขา Tops ที่คัดกรองแล้ว'
-                        });
-                        return; // Exit after successful share
+                // Check if Web Share API is supported and can share files
+                if (navigator.canShare && navigator.canShare(shareData)) {
+                    try {
+                        await navigator.share(shareData);
+                        // If shared successfully, we're done.
+                        return;
+                    } catch (error) {
+                        // If user cancels share, it's not an error.
+                        if (error.name === 'AbortError') {
+                            return; 
+                        }
+                        // For other errors, fall back to download.
+                        console.warn('Web Share API failed:', error);
                     }
                 }
                 
-                // Fallback for browsers that don't support Web Share API or can't share files
+                // Fallback for browsers that don't support sharing or if sharing failed.
                 downloadBlob(blob, fileName);
 
             } catch (error) {
-                // Ignore AbortError which is thrown when the user cancels the share dialog
-                if (error.name !== 'AbortError') {
-                    console.error("เกิดข้อผิดพลาดในการสร้างหรือแชร์ไฟล์ Excel:", error);
-                    alert("เกิดข้อผิดพลาดในการสร้างหรือแชร์ไฟล์ Excel");
-                }
+                console.error("เกิดข้อผิดพลาดในการสร้างไฟล์ Excel:", error);
+                alert("เกิดข้อผิดพลาดในการสร้างไฟล์ Excel");
             }
         });
         // ### MODIFICATION END ###
