@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Topster Store Data</title>
+    <title>Tops Store Data</title>
+    <link rel="icon" type="image/png" href="https://lh5.googleusercontent.com/d/1-W3jqJmdMVOm3VcgWSbVSlRbq3b4h5em">
     <!-- โหลด Tailwind CSS ผ่าน CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Library สำหรับ Export to Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
@@ -18,17 +21,14 @@
         .sticky-col { position: -webkit-sticky; position: sticky; left: 0; z-index: 10; }
         thead th.sticky-col { z-index: 30; }
 
-        /* --- MOBILE UI FIX: First column width --- */
         .first-col {
-            width: 150px;
-            min-width: 150px;
-            max-width: 150px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            width: 180px;
+            min-width: 180px;
+            max-width: 180px;
+            white-space: normal;
+            word-break: break-word;
         }
 
-        /* Styling for filter inputs in header */
         .filter-input {
             width: 100%;
             padding: 4px 8px;
@@ -44,7 +44,6 @@
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
         }
         
-        /* Hide scrollbar but keep functionality */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -53,18 +52,23 @@
 
     <div class="w-full h-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col relative">
         <div class="p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
-            <h1 class="text-xl sm:text-3xl font-bold text-gray-900">Topster Store Data</h1>
-            <p class="mt-1 text-sm sm:text-base text-gray-600">ข้อมูลสาขาของ Tops</p>
+            <h1 class="text-2xl sm:text-4xl font-bold text-red-600">Tops Store Data</h1>
+            <p class="mt-1 text-sm sm:text-base text-gray-600">ข้อมูลสาขา Tops</p>
         </div>
         
-        <div class="px-4 sm:px-6 pt-4 flex-shrink-0">
+        <!-- ADJUSTMENT: Container uses items-stretch for equal height buttons -->
+        <div class="px-4 sm:px-6 pt-4 flex-shrink-0 flex flex-col sm:flex-row gap-2 items-stretch">
             <input type="text" id="globalSearchInput"
                    class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                   placeholder="ค้นหาทั้งหมดในตาราง...">
+                   placeholder="ค้นหา...">
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button id="clearFiltersBtn" class="w-1/2 sm:w-auto p-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-semibold">Clear All</button>
+                <button id="exportExcelBtn" class="w-1/2 sm:w-auto p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-semibold">Excel File</button>
+            </div>
         </div>
 
-        <!-- Summary Boxes Section - Adjusted for mobile -->
-        <div id="summary-container" class="px-4 sm:px-6 py-4 flex gap-3 overflow-x-auto flex-shrink-0 no-scrollbar">
+
+        <div id="summary-container" class="px-4 sm:px-6 py-4 flex gap-2 sm:gap-3 overflow-x-auto flex-shrink-0 no-scrollbar">
             <!-- Summary boxes will be injected here -->
         </div>
 
@@ -72,8 +76,8 @@
             <div id="loader" class="flex justify-center items-center p-10">
                 <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-red-500"></div>
             </div>
-            <table id="dataTable" class="min-w-full w-full text-sm text-left hidden">
-                <thead class="bg-gray-200 text-gray-700 uppercase font-semibold text-xs sticky-header">
+            <table id="dataTable" class="min-w-full w-full text-left hidden">
+                <thead class="bg-gray-200 text-gray-700 uppercase font-semibold text-[11px] sticky-header">
                     <!-- Header and filter rows will be populated by JavaScript -->
                 </thead>
                 <tbody>
@@ -83,15 +87,15 @@
             <div id="no-results" class="text-center p-10 hidden"><p class="text-lg text-gray-500">ไม่พบข้อมูลที่ตรงกับการค้นหา</p></div>
         </div>
         
-        <!-- Version Number -->
         <footer class="absolute bottom-2 right-4 text-xs text-gray-400">
-            V.1.2
+            V.1.4
         </footer>
     </div>
 
     <script>
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwx251cdb6u18aUEc_7BM0ASWI9HCxMoxIBp4MssEoDf0-TiBW--HAaM6jToJrXIGxlrQ/exec?sheet=Sheet1';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwx251cdb6u18aUEc_7BM0ASWI9HCxMoxIBp4MssEoDf0-TiBW--HAaM6jToJrXIGxlrQ/exec';
         let fullData = { headers: [], data: [] };
+        let lastFilteredData = [];
         let columnFilters = {};
 
         const globalSearchInput = document.getElementById('globalSearchInput');
@@ -101,6 +105,8 @@
         const loader = document.getElementById('loader');
         const noResults = document.getElementById('no-results');
         const summaryContainer = document.getElementById('summary-container');
+        const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
 
         const summaryColors = [
             { bg: 'bg-green-100', text: 'text-green-800' },
@@ -113,14 +119,14 @@
         function renderSummary(dataToSummarize) {
             summaryContainer.innerHTML = '';
             const totalCount = dataToSummarize.length;
+            // BUG FIX: Correct key for format
             const formatKey = "Format";
 
             const totalBox = document.createElement('div');
-            // MOBILE UI FIX: Responsive summary box size
-            totalBox.className = 'bg-gray-800 text-white p-2 sm:p-3 rounded-lg text-center shadow-md flex-shrink-0';
+            totalBox.className = 'bg-gray-800 text-white p-2 rounded-lg text-center shadow-md flex-shrink-0 w-24 h-16 flex flex-col justify-center';
             totalBox.innerHTML = `
-                <div class="text-lg sm:text-2xl font-bold">${totalCount}</div>
-                <div class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider">Total Stores</div>
+                <div class="text-xl font-bold">${totalCount}</div>
+                <div class="text-[10px] font-semibold uppercase tracking-wider">Total Stores</div>
             `;
             summaryContainer.appendChild(totalBox);
 
@@ -135,11 +141,10 @@
             Object.entries(summary).sort().forEach(([format, count], index) => {
                 const color = summaryColors[index % summaryColors.length];
                 const box = document.createElement('div');
-                // MOBILE UI FIX: Responsive summary box size
-                box.className = `${color.bg} ${color.text} p-2 sm:p-3 rounded-lg text-center shadow-md flex-shrink-0`;
+                box.className = `${color.bg} ${color.text} p-2 rounded-lg text-center shadow-md flex-shrink-0 w-24 h-16 flex flex-col justify-center`;
                 box.innerHTML = `
-                    <div class="text-lg sm:text-2xl font-bold">${count}</div>
-                    <div class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider">${format}</div>
+                    <div class="text-xl font-bold">${count}</div>
+                    <div class="text-[10px] font-semibold uppercase tracking-wider">${format}</div>
                 `;
                 summaryContainer.appendChild(box);
             });
@@ -154,25 +159,36 @@
                 const th = document.createElement('th');
                 th.scope = 'col';
                 th.textContent = headerText;
-                th.className = 'py-3 px-4 whitespace-nowrap';
+                th.className = 'py-3 px-4';
                  if (index === 0) {
-                    // MOBILE UI FIX: Apply width class to first column header
                     th.classList.add('sticky-col', 'bg-gray-200', 'first-col');
                 }
                 headerRow.appendChild(th);
 
                 const filterTh = document.createElement('th');
-                filterTh.className = 'p-2';
+                filterTh.className = 'p-2 align-top';
                 if (index === 0) {
-                    // MOBILE UI FIX: Apply width class to first filter cell
                     filterTh.classList.add('sticky-col', 'bg-gray-200', 'first-col');
                 }
                 
+                // ADJUSTMENT: Add container and SVG icon for filter
+                const filterContainer = document.createElement('div');
+                filterContainer.className = 'relative';
+
+                const filterIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                filterIcon.setAttribute('class', 'absolute top-1/2 left-2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none');
+                filterIcon.setAttribute('fill', 'none');
+                filterIcon.setAttribute('viewBox', '0 0 24 24');
+                filterIcon.setAttribute('stroke', 'currentColor');
+                filterIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L16 11.414V16a1 1 0 01-.293.707l-2 2A1 1 0 0113 18v-6.586l-5.707-5.707A1 1 0 017 5V4z" />`;
+
                 const input = document.createElement('input');
                 input.type = 'text';
-                input.placeholder = `Filter...`;
-                input.className = 'filter-input';
+                input.placeholder = `...`;
+                // Add padding for icon
+                input.className = 'filter-input pl-8'; 
                 input.dataset.header = headerText;
+
                 const datalistId = `datalist-${headerText.replace(/[\s/]/g, '-')}`;
                 input.setAttribute('list', datalistId);
 
@@ -181,7 +197,7 @@
                 const uniqueValues = [...new Set(fullData.data.map(row => {
                     const cellValue = row[headerText];
                     if (cellValue && cellValue.toString().includes('T00:00:00.000Z')) {
-                        return new Date(cellValue).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                        return new Date(cellValue).toLocaleDateString('th-TH');
                     }
                     return cellValue?.toString().trim();
                 }).filter(Boolean))];
@@ -195,7 +211,10 @@
                     columnFilters[headerText] = e.target.value.toLowerCase().trim();
                     applyFiltersAndRender();
                 });
-                filterTh.appendChild(input);
+
+                filterContainer.appendChild(filterIcon);
+                filterContainer.appendChild(input);
+                filterTh.appendChild(filterContainer);
                 filterTh.appendChild(datalist);
                 filterRow.appendChild(filterTh);
             });
@@ -215,18 +234,17 @@
 
             dataToRender.forEach(rowDataObject => {
                 const tr = document.createElement('tr');
-                tr.className = 'bg-white hover:bg-gray-50 transition border-b border-gray-200';
+                tr.className = 'bg-white hover:bg-gray-50 transition border-b border-gray-200 text-xs sm:text-sm';
                 
                 fullData.headers.forEach((headerKey, index) => {
                     const cell = (index === 0) ? document.createElement('th') : document.createElement('td');
                     const cellData = rowDataObject[headerKey] || '';
                     cell.textContent = cellData.toString().includes('T00:00:00.000Z')
-                        ? new Date(cellData).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
+                        ? new Date(cellData).toLocaleDateString('th-TH')
                         : cellData;
                     
                     if (index === 0) {
                         cell.scope = 'row';
-                        // MOBILE UI FIX: Apply width class to first data cell
                         cell.className = 'py-3 px-4 font-medium text-gray-900 sticky-col bg-white first-col';
                     } else {
                         cell.className = 'py-3 px-4 whitespace-nowrap';
@@ -248,7 +266,7 @@
                     let formattedCellValue = '';
                     if (rawCellValue) {
                         if (rawCellValue.toString().includes('T00:00:00.000Z')) {
-                            formattedCellValue = new Date(rawCellValue).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                            formattedCellValue = new Date(rawCellValue).toLocaleDateString('th-TH');
                         } else {
                             formattedCellValue = rawCellValue.toString();
                         }
@@ -261,9 +279,28 @@
                     cellValue?.toString().toLowerCase().includes(globalSearchTerm)
                 );
             });
+            lastFilteredData = filteredData; 
             renderTableBody(filteredData);
             renderSummary(filteredData);
         }
+
+        clearFiltersBtn.addEventListener('click', () => {
+            globalSearchInput.value = '';
+            document.querySelectorAll('.filter-input').forEach(input => input.value = '');
+            columnFilters = {};
+            applyFiltersAndRender();
+        });
+
+        exportExcelBtn.addEventListener('click', () => {
+            if (lastFilteredData.length === 0) {
+                alert("ไม่มีข้อมูลให้ส่งออก");
+                return;
+            }
+            const worksheet = XLSX.utils.json_to_sheet(lastFilteredData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Tops_Data");
+            XLSX.writeFile(workbook, "Tops_Store_Data.xlsx");
+        });
 
         globalSearchInput.addEventListener('input', applyFiltersAndRender);
 
@@ -277,6 +314,7 @@
                 
                 if (data && data.headers && data.data) {
                     fullData = data;
+                    lastFilteredData = data.data; 
                     renderHeader();
                     renderTableBody(fullData.data);
                     renderSummary(fullData.data);
