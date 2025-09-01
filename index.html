@@ -3,131 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Branch Data Viewer</title>
+    <title>Topster Store Data</title>
     <!-- โหลด Tailwind CSS ผ่าน CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- --- FONT OPTIONS --- -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* ใช้ฟอนต์ Kanit สำหรับภาษาไทย และ Inter สำหรับภาษาอังกฤษ */
-        body {
-            font-family: 'Kanit', 'Inter', sans-serif;
-        }
+        /* --- FONT OPTIONS (เลือกโดยการลบ comment ของ font ที่ต้องการ) --- */
+        body { font-family: 'Sarabun', sans-serif; }
+
         /* Custom styles สำหรับตรึงแถวและคอลัมน์ */
-        .sticky-header {
-            position: -webkit-sticky; /* Safari */
-            position: sticky;
-            top: 0;
-            z-index: 20;
+        .sticky-header { position: -webkit-sticky; position: sticky; top: 0; z-index: 20; }
+        .sticky-col { position: -webkit-sticky; position: sticky; left: 0; z-index: 10; }
+        thead th.sticky-col { z-index: 30; }
+
+        /* --- TABLE BORDER OPTIONS --- */
+        .table-grid td, .table-grid th { border: 1px solid #e5e7eb; }
+        .table-vertical-lines td, .table-vertical-lines th { border-right: 1px solid #e5e7eb; }
+
+        /* Styling for filter inputs in header */
+        .filter-input {
+            width: 100%;
+            padding: 4px 8px;
+            margin-top: 4px;
+            font-weight: normal;
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 6px;
+            font-size: 12px;
         }
-        .sticky-col {
-            position: -webkit-sticky; /* Safari */
-            position: sticky;
-            left: 0;
-            z-index: 10;
-        }
-        /* ทำให้หัวมุมซ้ายบนสุดมี z-index สูงที่สุด */
-        thead th.sticky-col {
-            z-index: 30;
+        .filter-input:focus {
+            outline: none;
+            border-color: #3b82f6; /* blue-500 */
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gradient-to-r from-[#ff3d1a] to-[#ff3d1a] text-gray-800 h-screen overflow-hidden p-4 sm:p-6 lg:p-8">
 
-    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div class="p-6 border-b border-gray-200">
-                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">ตารางข้อมูลสาขา</h1>
-                <p class="mt-1 text-gray-600">แสดงข้อมูลล่าสุดจาก API และสามารถค้นหาได้</p>
-            </div>
-            
-            <div class="p-6">
-                <!-- ช่องสำหรับค้นหา -->
-                <input type="text" id="searchInput"
-                       class="w-full p-3 mb-6 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                       placeholder="ค้นหาข้อมูลในตาราง...">
-            </div>
+    <div class="w-full h-full bg-white rounded-xl shadow-lg overflow-hidden flex flex-col">
+        <div class="p-6 border-b border-gray-200 flex-shrink-0">
+            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Topster Store Data</h1>
+            <p class="mt-1 text-gray-600">ข้อมูลสาขาของ Tops</p>
+        </div>
+        
+        <div class="p-6 flex-shrink-0">
+            <input type="text" id="globalSearchInput"
+                   class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                   placeholder="ค้นหาทั้งหมดในตาราง...">
+        </div>
 
-            <!-- ส่วนของตารางข้อมูล -->
-            <div id="table-container" class="overflow-auto" style="max-height: 75vh;">
-                <div id="loader" class="text-center p-10">
-                    <p class="text-lg text-gray-500">กำลังโหลดข้อมูลจาก API...</p>
-                </div>
-                <table id="dataTable" class="min-w-full w-full text-sm text-left hidden">
-                    <thead class="bg-gray-200 text-gray-700 uppercase font-semibold text-xs sticky-header">
-                        <!-- Header row will be populated by JavaScript -->
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        <!-- Data rows will be populated by JavaScript -->
-                    </tbody>
-                </table>
-                 <div id="no-results" class="text-center p-10 hidden">
-                    <p class="text-lg text-gray-500">ไม่พบข้อมูลที่ตรงกับการค้นหา</p>
-                </div>
-            </div>
+        <!-- NEW: Summary Boxes Section -->
+        <div id="summary-container" class="px-6 pb-4 flex flex-wrap gap-3 sm:gap-4 overflow-x-auto flex-shrink-0">
+            <!-- Summary boxes will be injected here by JavaScript -->
+        </div>
+
+        <div id="table-container" class="overflow-auto flex-grow">
+            <div id="loader" class="text-center p-10"><p class="text-lg text-gray-500">กำลังโหลดข้อมูลจาก API...</p></div>
+            <table id="dataTable" class="min-w-full w-full text-sm text-left hidden">
+                <thead class="bg-gray-200 text-gray-700 uppercase font-semibold text-xs sticky-header">
+                    <!-- Header and filter rows will be populated by JavaScript -->
+                </thead>
+                <tbody>
+                    <!-- Data rows will be populated by JavaScript -->
+                </tbody>
+            </table>
+            <div id="no-results" class="text-center p-10 hidden"><p class="text-lg text-gray-500">ไม่พบข้อมูลที่ตรงกับการค้นหา</p></div>
         </div>
     </div>
 
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbwx251cdb6u18aUEc_7BM0ASWI9HCxMoxIBp4MssEoDf0-TiBW--HAaM6jToJrXIGxlrQ/exec?sheet=Sheet1';
-        let fullData = { headers: [], data: [] }; // เก็บข้อมูลทั้งหมด
+        let fullData = { headers: [], data: [] };
+        let columnFilters = {};
 
-        // --- ฟังก์ชันสำหรับสร้างและแสดงตาราง ---
-        function renderTable(dataToRender) {
-            const table = document.getElementById('dataTable');
-            const thead = table.querySelector('thead');
-            const tbody = table.querySelector('tbody');
-            const noResults = document.getElementById('no-results');
-            const { headers, data } = dataToRender;
+        const globalSearchInput = document.getElementById('globalSearchInput');
+        const table = document.getElementById('dataTable');
+        const thead = table.querySelector('thead');
+        const tbody = table.querySelector('tbody');
+        const loader = document.getElementById('loader');
+        const noResults = document.getElementById('no-results');
+        const summaryContainer = document.getElementById('summary-container');
 
-            // ล้างข้อมูลเก่า
+        // --- NEW: Function to render summary boxes ---
+        const summaryColors = [
+            { bg: 'bg-green-100', text: 'text-green-800' },
+            { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+            { bg: 'bg-purple-100', text: 'text-purple-800' },
+            { bg: 'bg-pink-100', text: 'text-pink-800' },
+            { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+        ];
+
+        function renderSummary(dataToSummarize) {
+            summaryContainer.innerHTML = '';
+            const totalCount = dataToSummarize.length;
+            const formatKey = "ฟอร์เมท / Format";
+
+            // Create a box for the total count
+            const totalBox = document.createElement('div');
+            totalBox.className = 'bg-gray-800 text-white p-3 rounded-lg text-center shadow-md flex-shrink-0';
+            totalBox.innerHTML = `
+                <div class="text-2xl font-bold">${totalCount}</div>
+                <div class="text-xs font-semibold uppercase tracking-wider">Total Stores</div>
+            `;
+            summaryContainer.appendChild(totalBox);
+
+            if (totalCount === 0) return;
+
+            const summary = dataToSummarize.reduce((acc, row) => {
+                const format = row[formatKey] || 'N/A';
+                acc[format] = (acc[format] || 0) + 1;
+                return acc;
+            }, {});
+
+            // Create boxes for each format
+            Object.entries(summary).sort().forEach(([format, count], index) => {
+                const color = summaryColors[index % summaryColors.length];
+                const box = document.createElement('div');
+                box.className = `${color.bg} ${color.text} p-3 rounded-lg text-center shadow-md flex-shrink-0`;
+                box.innerHTML = `
+                    <div class="text-2xl font-bold">${count}</div>
+                    <div class="text-xs font-semibold uppercase tracking-wider">${format}</div>
+                `;
+                summaryContainer.appendChild(box);
+            });
+        }
+
+        function renderHeader() {
             thead.innerHTML = '';
+            const headerRow = document.createElement('tr');
+            const filterRow = document.createElement('tr');
+
+            fullData.headers.forEach((headerText, index) => {
+                const th = document.createElement('th');
+                th.scope = 'col';
+                th.textContent = headerText;
+                th.className = 'py-3 px-4 whitespace-nowrap';
+                 if (index === 0) {
+                    th.classList.add('sticky-col', 'bg-gray-200');
+                }
+                headerRow.appendChild(th);
+
+                const filterTh = document.createElement('th');
+                filterTh.className = 'p-2';
+                if (index === 0) {
+                    filterTh.classList.add('sticky-col', 'bg-gray-200');
+                }
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = `Filter...`;
+                input.className = 'filter-input';
+                input.dataset.header = headerText;
+                const datalistId = `datalist-${headerText.replace(/[\s/]/g, '-')}`;
+                input.setAttribute('list', datalistId);
+
+                const datalist = document.createElement('datalist');
+                datalist.id = datalistId;
+                const uniqueValues = [...new Set(fullData.data.map(row => {
+                    const cellValue = row[headerText];
+                    if (cellValue && cellValue.toString().includes('T00:00:00.000Z')) {
+                        return new Date(cellValue).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                    }
+                    return cellValue?.toString().trim();
+                }).filter(Boolean))];
+                uniqueValues.sort((a, b) => a.localeCompare(b, 'th'));
+                uniqueValues.forEach(value => {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    datalist.appendChild(option);
+                });
+                input.addEventListener('input', (e) => {
+                    columnFilters[headerText] = e.target.value.toLowerCase().trim();
+                    applyFiltersAndRender();
+                });
+                filterTh.appendChild(input);
+                filterTh.appendChild(datalist);
+                filterRow.appendChild(filterTh);
+            });
+            thead.appendChild(headerRow);
+            thead.appendChild(filterRow);
+        }
+
+        function renderTableBody(dataToRender) {
             tbody.innerHTML = '';
-            
-            if (data.length === 0) {
+            if (dataToRender.length === 0) {
                 noResults.classList.remove('hidden');
                 table.classList.add('hidden');
                 return;
             }
-
             table.classList.remove('hidden');
             noResults.classList.add('hidden');
 
-            // 1. สร้าง Header
-            const headerRow = document.createElement('tr');
-            headers.forEach((headerText, index) => {
-                const th = document.createElement('th');
-                th.scope = 'col';
-                th.textContent = headerText;
-                th.className = 'py-3 px-4 whitespace-nowrap sticky-header bg-gray-200';
-                if (index === 0) {
-                    th.classList.add('sticky-col');
-                }
-                headerRow.appendChild(th);
-            });
-            thead.appendChild(headerRow);
-
-            // 2. สร้าง Rows ข้อมูล
-            data.forEach(rowDataObject => {
+            dataToRender.forEach(rowDataObject => {
                 const tr = document.createElement('tr');
-                tr.className = 'bg-white hover:bg-gray-50 transition';
+                tr.className = 'bg-white hover:bg-gray-50 transition border-b border-gray-200';
                 
-                headers.forEach((headerKey, index) => {
-                    // ใช้ <th> สำหรับคอลัมน์แรกเพื่อความหมาย และตรึงคอลัมน์
+                fullData.headers.forEach((headerKey, index) => {
                     const cell = (index === 0) ? document.createElement('th') : document.createElement('td');
-                    const cellData = rowDataObject[headerKey] || ''; // ดึงข้อมูลด้วย key จาก header
-
-                    // จัดการข้อมูลวันที่
-                    if (cellData.toString().includes('T00:00:00.000Z')) {
-                         cell.textContent = new Date(cellData).toLocaleDateString('th-TH');
-                    } else {
-                         cell.textContent = cellData;
-                    }
+                    const cellData = rowDataObject[headerKey] || '';
+                    cell.textContent = cellData.toString().includes('T00:00:00.000Z')
+                        ? new Date(cellData).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
+                        : cellData;
                     
                     if (index === 0) {
                         cell.scope = 'row';
-                        cell.className = 'py-3 px-4 font-medium text-gray-900 whitespace-nowrap sticky-col bg-white group-hover:bg-gray-50';
+                        cell.className = 'py-3 px-4 font-medium text-gray-900 whitespace-nowrap sticky-col bg-white';
                     } else {
                         cell.className = 'py-3 px-4 whitespace-nowrap';
                     }
@@ -136,47 +219,55 @@
                 tbody.appendChild(tr);
             });
         }
-
-        // --- Event Listener สำหรับช่องค้นหา ---
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase().trim();
+        
+        function applyFiltersAndRender() {
+            const globalSearchTerm = globalSearchInput.value.toLowerCase().trim();
             
-            if (!searchTerm) {
-                renderTable(fullData); // ถ้าช่องค้นหาว่าง ให้แสดงข้อมูลทั้งหมด
-                return;
-            }
-            
-            const filteredData = fullData.data.filter(row => {
-                // ค้นหาจากค่าทั้งหมดใน object ของแถวนั้นๆ
-                return Object.values(row).some(cellValue => 
-                    cellValue.toString().toLowerCase().includes(searchTerm)
+            let filteredData = fullData.data.filter(row => {
+                const columnMatch = Object.keys(columnFilters).every(header => {
+                    const filterValue = columnFilters[header];
+                    if (!filterValue) return true;
+                    const rawCellValue = row[header];
+                    let formattedCellValue = '';
+                    if (rawCellValue) {
+                        if (rawCellValue.toString().includes('T00:00:00.000Z')) {
+                            formattedCellValue = new Date(rawCellValue).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+                        } else {
+                            formattedCellValue = rawCellValue.toString();
+                        }
+                    }
+                    return formattedCellValue.toLowerCase().includes(filterValue);
+                });
+                if (!columnMatch) return false;
+                if (!globalSearchTerm) return true;
+                return Object.values(row).some(cellValue =>
+                    cellValue?.toString().toLowerCase().includes(globalSearchTerm)
                 );
             });
+            renderTableBody(filteredData);
+            renderSummary(filteredData); // <-- Update summary on filter
+        }
 
-            renderTable({ headers: fullData.headers, data: filteredData });
-        });
+        globalSearchInput.addEventListener('input', applyFiltersAndRender);
 
-        // --- ดึงข้อมูลจาก API เมื่อหน้าเว็บโหลด ---
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const response = await fetch(API_URL);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
-                document.getElementById('loader').classList.add('hidden');
+                const data = await response.json();
+                loader.classList.add('hidden');
                 
                 if (data && data.headers && data.data) {
                     fullData = data;
-                    renderTable(fullData);
+                    renderHeader();
+                    renderTableBody(fullData.data);
+                    renderSummary(fullData.data); // <-- Initial summary render
                 } else {
                     throw new Error("Invalid data structure from API");
                 }
-
             } catch (error) {
-                document.getElementById('loader').classList.add('hidden');
-                const noResults = document.getElementById('no-results');
+                loader.classList.add('hidden');
                 noResults.classList.remove('hidden');
                 noResults.innerText = `เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}`;
                 console.error('Fetch error:', error);
