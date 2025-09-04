@@ -252,6 +252,32 @@
                 tbody.appendChild(tr);
             });
         }
+
+        function updateDatalists(dataForDatalist) {
+            fullData.headers.forEach(headerText => {
+                const datalistId = `datalist-${headerText.replace(/[\s/]/g, '-')}`;
+                const datalist = document.getElementById(datalistId);
+                if (!datalist) return;
+        
+                datalist.innerHTML = ''; // ล้างค่าเก่า
+        
+                const uniqueValues = [...new Set(dataForDatalist.map(row => {
+                    const cellValue = row[headerText];
+                    if (cellValue && cellValue.toString().includes('T00:00:00.000Z')) {
+                        return new Date(cellValue).toLocaleDateString('th-TH');
+                    }
+                    return cellValue != null ? cellValue.toString().trim() : null;
+                }).filter(Boolean))];
+        
+                uniqueValues.sort((a, b) => a.localeCompare(b, 'th'));
+        
+                uniqueValues.forEach(value => {
+                    const option = document.createElement('option');
+                    option.value = value;
+                    datalist.appendChild(option);
+                });
+            });
+        }
         
         function applyFiltersAndRender() {
             const globalSearchTerm = globalSearchInput.value.toLowerCase().trim();
@@ -272,14 +298,18 @@
                     return formattedCellValue.toLowerCase().includes(filterValue);
                 });
                 if (!columnMatch) return false;
+                
                 if (!globalSearchTerm) return true;
                 return Object.values(row).some(cellValue =>
-                    cellValue?.toString().toLowerCase().includes(globalSearchTerm)
+                    // cellValue?.toString().toLowerCase().includes(globalSearchTerm)
+                    // แก้จาก cellValue?.toString() เป็นแบบนี้เพื่อความแน่นอน
+                    cellValue != null && cellValue.toString().toLowerCase().includes(globalSearchTerm)
                 );
             });
             lastFilteredData = filteredData; 
             renderTableBody(filteredData);
             renderSummary(filteredData);
+            updateDatalists(filteredData);
         }
 
         clearFiltersBtn.addEventListener('click', () => {
@@ -368,6 +398,7 @@
                     renderHeader();
                     renderTableBody(fullData.data);
                     renderSummary(fullData.data);
+                    updateDatalists(fullData.data);
                 } else {
                     throw new Error("Invalid data structure from API");
                 }
