@@ -394,16 +394,16 @@
             // รับ URL ปัจจุบัน
             const currentUrl = window.location.href;
             // ตรวจสอบสถานะการ redirect ใน sessionStorage
-            const redirectStatus = sessionStorage.getItem('isRedirected');
+            const isVerifiedStatus = sessionStorage.getItem('isVerified');
             // ถ้าไม่มีสถานะการ redirect และ URL ปัจจุบันตรงตามเงื่อนไข
-            if (!redirectStatus && currentUrl.indexOf(targetUrlPart) > -1) {                
+            if (!isVerifiedStatus && currentUrl.indexOf(targetUrlPart) > -1) {                
                 // ตั้งค่าสถานะใน localStorage ก่อน redirect
-                sessionStorage.setItem('isRedirected', 'true');
+                // sessionStorage.setItem('isVerified', 'true');
                 console.log("URL ตรงตามเงื่อนไข, กำลัง redirect ไปยัง LIFF");
                 window.location.replace(liffUrl);
                 return;
             } else {
-                console.log("redirectStatus : " + sessionStorage.getItem('isRedirected'));
+                console.log("isVerified Status : " + sessionStorage.getItem('isVerified'));
                 try {
                 const response = await fetch(API_URL);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
