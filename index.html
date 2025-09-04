@@ -403,11 +403,7 @@
                 window.location.replace(liffUrl);
                 return;
             } else {
-                // หาก URL ไม่ตรงตามเงื่อนไข หรือเคย redirect แล้วใช้งานได้ปกติ
-                console.log("เคย redirect แล้วใช้งานได้ปกติ");
-                localStorage.removeItem('isRedirected');
-                });
-
+                console.log(localStorage.getItem('isRedirected'));
                 try {
                 const response = await fetch(API_URL);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
