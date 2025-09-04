@@ -407,9 +407,8 @@
                 console.log("เคย redirect แล้วใช้งานได้ปกติ");
                 localStorage.removeItem('isRedirected');
                 });
-            }
-                                  
-            try {
+
+                try {
                 const response = await fetch(API_URL);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
@@ -431,6 +430,7 @@
                 noResults.classList.remove('hidden');
                 noResults.innerText = `เกิดข้อผิดพลาดในการโหลดข้อมูล: ${error.message}`;
                 console.error('Fetch error:', error);
+            }            
             }
         });
     </script>
