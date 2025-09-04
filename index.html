@@ -385,22 +385,30 @@
         globalSearchInput.addEventListener('input', applyFiltersAndRender);
 
         document.addEventListener('DOMContentLoaded', async () => {
-            
+
+            // Security การ Copy URL ไว้ใช้งาน โดยไม่ผ่านการตรวจสอบจาก LIFF Verify
             // URL ปลายทางของ LIFF
             const liffUrl = "https://liff.line.me/2007107416-MlWjQ44e?request=StoreData";
-            
             // URL ที่ต้องการตรวจสอบ (ตรวจสอบว่า URL ปัจจุบันมีส่วนนี้หรือไม่)
             const targetUrlPart = "https://topster-merchandise.github.io/Store-Data/";
-
             // รับ URL ปัจจุบัน
             const currentUrl = window.location.href;
-
-            // ถ้า URL ปัจจุบันตรงตามเงื่อนไข นำไปยังหน้าตรวจสอบสิทธิ์
-            if (currentUrl.indexOf(targetUrlPart) > -1) {              
+            // ตรวจสอบสถานะการ redirect ใน localStorage
+            const redirectStatus = localStorage.getItem('isRedirected');
+            // ถ้าไม่มีสถานะการ redirect และ URL ปัจจุบันตรงตามเงื่อนไข
+            if (!redirectStatus && currentUrl.indexOf(targetUrlPart) > -1) {                
+                // ตั้งค่าสถานะใน localStorage ก่อน redirect
+                localStorage.setItem('isRedirected', 'true');
                 console.log("URL ตรงตามเงื่อนไข, กำลัง redirect ไปยัง LIFF");
                 window.location.replace(liffUrl);
                 return;
+            } else {
+                // หาก URL ไม่ตรงตามเงื่อนไข หรือเคย redirect แล้วใช้งานได้ปกติ
+                console.log("เคย redirect แล้วใช้งานได้ปกติ");
+                localStorage.removeItem('isRedirected');
+                });
             }
+                                  
             try {
                 const response = await fetch(API_URL);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
